@@ -6,6 +6,7 @@
 (server-start)
 
 (define-coding-system-alias 'native 'utf-8)
+(define-coding-system-alias 'utf8 'utf-8)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; melpa
 (message "setup packages")
@@ -39,28 +40,6 @@
 ;; intelligent selection
 (add-hook 'mouse-track-click-hook 'id-select-double-click-hook)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; short cuts
-
-(global-set-key [f2] 'isearch-forward)
-
-(global-set-key [f3] 'delete-window)
-(global-set-key [(shift f3)] 'delete-frame)
-
-(defun kill-current-buffer ()
-  "Kill the current buffer"
-  (interactive)
-  (kill-buffer nil)
-  )
-(global-set-key [f4] 'kill-current-buffer)
-(global-set-key [f6] 'new-frame)
-
-(global-set-key [f7] 'next-error)
-(global-set-key [(shift f7)] 'previous-error)
-(global-set-key [f9] 'recompile)
-(global-set-key [(shift f9)] 'compile)
-
-(global-set-key [f12] 'abort-recursive-edit)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; show/hide blocks
 
 (add-hook 'tcl-mode-hook 'hs-minor-mode)
@@ -84,6 +63,29 @@
 (require 'tramp)
 (setq tramp-default-method "sshx")
 
+(defun new-compilation-buffer (command)
+  "Renames existing *compilation* buffer to something unique so
+      that a new compilation job can be run."
+  (interactive
+   (list
+    (let ((command (eval compile-command)))
+      (if (or compilation-read-command current-prefix-arg)
+	  (compilation-read-command command)
+	command))))
+  (let ((cbuf (get-buffer "*compilation*"))
+        (more-cbufs t)
+        (n 1)
+        (new-cbuf-name ""))
+    (when cbuf
+      (while more-cbufs
+        (setq new-cbuf-name (format "*compilation%d*" n))
+        (setq n (1+ n))
+        (setq more-cbufs (get-buffer new-cbuf-name)))
+      (with-current-buffer cbuf
+        (rename-buffer new-cbuf-name)))
+    (compile command)
+    ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Mixed HTML+CCS+...
 (message "setup web-mode")
 
@@ -95,6 +97,12 @@
 (message "setup Python")
 
 (elpy-enable)
+
+(require 'column-marker)
+(add-hook 'python-mode-hook
+          (lambda () (interactive)
+            (column-marker-1 (+ fill-column 1))
+            (column-number-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; C/C++
 (message "setup C++")
@@ -150,6 +158,9 @@
 (require 'lua-mode)
 (add-to-list  'auto-mode-alist '("\\.lua\\'" . lua-mode))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; puppet
+(require 'puppet-mode)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gnuplot mode
 (require 'gnuplot-mode)
 
@@ -182,5 +193,28 @@
 (add-hook 'LaTeX-mode-hook 'mylhook)
 
 (setq TeX-style-private '("~/.emacs.d/auctex"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; short cuts
+
+(global-set-key [f2] 'isearch-forward)
+
+(global-set-key [f3] 'delete-window)
+(global-set-key [(shift f3)] 'delete-frame)
+
+(defun kill-current-buffer ()
+  "Kill the current buffer"
+  (interactive)
+  (kill-buffer nil)
+  )
+(global-set-key [f4] 'kill-current-buffer)
+(global-set-key [f6] 'new-frame)
+
+(global-set-key [f7] 'next-error)
+(global-set-key [(shift f7)] 'previous-error)
+(global-set-key [f8] 'new-compilation-buffer)
+(global-set-key [f9] 'recompile)
+(global-set-key [(shift f9)] 'compile)
+
+(global-set-key [f12] 'abort-recursive-edit)
 
 (message "done reading init.el")
