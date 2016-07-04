@@ -101,11 +101,11 @@ def cleanup(dirpath=".", force=False, compiled=False, latex=False):
                 path = os.path.join(cdir, filename)
                 # exclude whitelisted paths
                 if WHITELIST.match(os.path.realpath(path)):
-                    sys.stdout.write("%s whitelisted -> skipped" % (file))
+                    sys.stdout.write("%s whitelisted -> skipped" % (filename))
                     continue
 
                 # delete
-                if ask("delete %s" % file, force):
+                if ask("delete %s" % filename, force):
                     os.remove(path)
                     sys.stdout.write("done\n")
                 else:
