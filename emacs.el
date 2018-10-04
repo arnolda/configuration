@@ -1,5 +1,6 @@
 (message "start reading init.el")
 
+(add-to-list 'load-path "~/.emacs.d/packages")
 (load "~/.emacs.d/local.el")
 (load custom-file)
 
@@ -25,7 +26,7 @@
   (interactive)
   (let ((l (cdr (window-list))))
     (if l
-	(select-window (car l))
+        (select-window (car l))
       (switch-to-buffer (other-buffer (current-buffer) 1)))))
 
 (global-set-key [(control tab)] 'switch-to-next-buffer)
@@ -37,8 +38,20 @@
 ;; better subversion status line
 (require 'psvn)
 
+(require 'whitespace)
+(global-whitespace-mode t)
+
 ;; intelligent selection
 (add-hook 'mouse-track-click-hook 'id-select-double-click-hook)
+
+(defun delete-file-and-buffer ()
+  "Kill the current buffer and deletes the file it is visiting."
+  (interactive)
+  (let ((filename (buffer-file-name)))
+    (when filename
+      (delete-file filename)
+      (message "Deleted file %s" filename)
+      (kill-buffer))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; show/hide blocks
 
@@ -70,8 +83,8 @@
    (list
     (let ((command (eval compile-command)))
       (if (or compilation-read-command current-prefix-arg)
-	  (compilation-read-command command)
-	command))))
+          (compilation-read-command command)
+        command))))
   (let ((cbuf (get-buffer "*compilation*"))
         (more-cbufs t)
         (n 1)
@@ -118,26 +131,26 @@
   (let ((class (file-name-nondirectory (file-name-sans-extension file)))
         (dir (file-name-directory file)))
     (cond ((string-match sourcepattern file)
-	   (let ((files (directory-files
-			 dir nil (concat "^" class headerpattern) nil)))
-	     (if files
-		 (car files)
-	       (concat class ".hpp"))))
-	  ((string-match headerpattern file)
-	   (let ((files (directory-files
-			 dir nil (concat "^" class sourcepattern) nil)))
-	     (if files
-		 (car files)
-	       (concat class ".cpp"))
-	     ))))
+           (let ((files (directory-files
+                         dir nil (concat "^" class headerpattern) nil)))
+             (if files
+                 (car files)
+               (concat class ".hpp"))))
+          ((string-match headerpattern file)
+           (let ((files (directory-files
+                         dir nil (concat "^" class sourcepattern) nil)))
+             (if files
+                 (car files)
+               (concat class ".cpp"))
+             ))))
   )
 
 (defun make-class-frame ()
   (interactive)
   (let ((compl (c-complement buffer-file-name)))
     (if compl
-	(progn (select-window (split-window))
-	       (find-file compl))
+        (progn (select-window (split-window))
+               (find-file compl))
       (error "could not determine complement file")))
   )
 
