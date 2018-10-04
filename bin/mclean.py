@@ -25,10 +25,10 @@ from argparse import ArgumentParser
 
 # files to always delete
 CLEANFILES = re.compile(r"\._.*$|.*\.(bak|old)$|.*~$|fftw.*wisdom_.*\.file$")
-# files to delete if parent missing
-ORPHAN_CLEANFILES = re.compile(r".*\.o$|.*\.pyc$")
 # LaTeX extra
 LATEX_CLEANFILES = re.compile(r".*\.(fls|tdo|spl|vrb|toc|ilg|ind|idx|nav|snm|bcf|bbl|blg|run\.xml|dvi|log|aux|out|fdb_latexmk)$|.*-blx.bib$")
+# diff extra
+DIFF_CLEANFILES = re.compile(r".*\.(orig|rej)$")
 
 # files that have to be kept nevertheless. Matches full paths
 WHITELIST = re.compile(r".*/.git/.*")
@@ -38,40 +38,46 @@ def check_orphan(filename, dirpath):
     "Check for orphans (pyc without py, o without c)"
     base, ext = os.path.splitext(filename)
     fullbase = os.path.join(dirpath, base)
-    for ext in (".c", ".cpp", ".cc", ".C", ".py"):
-        if os.path.exists(fullbase + ext):
-            return False
-    return True
+    if ext == ".o":
+        if not any(os.path.exists(fullbase + ext) for ext in (".c", ".cpp", ".cc", ".C")):
+            return True
+    elif ext == ".pyc":
+        if not os.path.exists(fullbase + ".py"):
+            return True
+    return False
 
 
 def check_auctex(filename, dirpath):
     "check AucTeX auto files for relevance by searching upstream"
     elbase, ext = os.path.splitext(filename)
     updir, dirname = os.path.split(dirpath)
-    if (ext == ".el" or ext == ".elc") and dirname == "auto":
+    if ext in (".el", ".elc") and dirname == "auto":
         texbase = os.path.join(updir, elbase)
-        for texext in (".tex", ".sty", ".cls"):
-            if os.path.exists(texbase + texext):
-                return False
-        # LaTeX el without corresponding source
-        return True
-    else:
-        # otherwise, probably needed
-        return False
+        if not any(os.path.exists(texbase + texext) for texext in (".tex", ".sty", ".cls")):
+            return True
+    return False
 
 
-def isbackup(filename, dirpath, compiled, latex):
+def isbackup(filename, dirpath, diff, compiled, latex):
     "check if file is a backup"
 
     # generic pattern test
-    if CLEANFILES.match(filename) or (latex and LATEX_CLEANFILES.match(filename)):
+    if CLEANFILES.match(filename):
         return True
 
-    if latex:
-        return check_auctex(filename, dirpath)
+    if diff:
+        if DIFF_CLEANFILES.match(filename):
+            return True
 
-    if compiled and ORPHAN_CLEANFILES.match(filename):
-        return check_orphan(filename, dirpath)
+    if latex:
+        if LATEX_CLEANFILES.match(filename) or check_auctex(filename, dirpath):
+            return True
+
+    if compiled:
+        if check_orphan(filename, dirpath):
+            return True
+
+    return False
 
 
 def ask(prompt, force=False):
@@ -89,7 +95,7 @@ def ask(prompt, force=False):
     return True
 
 
-def cleanup(dirpath=".", force=False, compiled=False, latex=False):
+def cleanup(dirpath=".", force=False, diff=False, compiled=False, latex=False):
     """
     ask and delete all files that match the patterns. If latex is True, also the
     LaTeX-specific patterns.
@@ -97,7 +103,7 @@ def cleanup(dirpath=".", force=False, compiled=False, latex=False):
     for cdir, _, files in os.walk(dirpath):
         sys.stdout.write("entering %s\n" % (cdir))
         for filename in files:
-            if isbackup(filename, cdir, compiled, latex):
+            if isbackup(filename, cdir, diff, compiled, latex):
                 path = os.path.join(cdir, filename)
                 # exclude whitelisted paths
                 if WHITELIST.match(os.path.realpath(path)):
@@ -123,9 +129,13 @@ def run():
                         help="clean compiled files even if in use, such as .o or .pyc")
     parser.add_argument("--latex", "-l", dest="latex", default=False,
                         action="store_true", help="clean LaTeX specific files")
+    parser.add_argument("--diff", "-d", dest="diff", default=False,
+                        action="store_true", help="clean diff specific files")
     args = parser.parse_args()
 
     for dirpath in args.directories or ["."]:
-        cleanup(dirpath, args.force, args.compiled, args.latex)
+        cleanup(dirpath, args.force, args.diff, args.compiled, args.latex)
 
-run()
+
+if __name__ == "__main__":
+    run()
