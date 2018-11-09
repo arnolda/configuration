@@ -76,27 +76,23 @@
 (require 'tramp)
 (setq tramp-default-method "sshx")
 
-(defun new-compilation-buffer (command)
-  "Renames existing *compilation* buffer to something unique so
-      that a new compilation job can be run."
-  (interactive
-   (list
-    (let ((command (eval compile-command)))
-      (if (or compilation-read-command current-prefix-arg)
-          (compilation-read-command command)
-        command))))
-  (let ((cbuf (get-buffer "*compilation*"))
+(defun new-compilation-buffer ()
+  "Copy current compilation buffer to something unique so that a new compilation job can be run."
+  (interactive)
+  (let ((cbuf (current-buffer))
         (more-cbufs t)
         (n 1)
         (new-cbuf-name ""))
-    (when cbuf
+    (when (equal major-mode "compilation-mode")
       (while more-cbufs
         (setq new-cbuf-name (format "*compilation%d*" n))
         (setq n (1+ n))
         (setq more-cbufs (get-buffer new-cbuf-name)))
-      (with-current-buffer cbuf
-        (rename-buffer new-cbuf-name)))
-    (compile command)
+      (message "creating buffer %s" new-cbuf-name)
+      (with-current-buffer (get-buffer-create new-cbuf-name)
+        (insert-buffer-substring cbuf)
+        (compilation-mode)
+        ))
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Mixed HTML+CCS+...
@@ -170,9 +166,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lua
 (require 'lua-mode)
 (add-to-list  'auto-mode-alist '("\\.lua\\'" . lua-mode))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; puppet
-(require 'puppet-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gnuplot mode
 (require 'gnuplot-mode)
