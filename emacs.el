@@ -35,8 +35,6 @@
 (require 'font-lock)
 ;; pretty printing
 (require 'printing)
-;; better subversion status line
-(require 'psvn)
 
 (require 'whitespace)
 (global-whitespace-mode t)
