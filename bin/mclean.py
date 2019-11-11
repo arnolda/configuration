@@ -42,7 +42,8 @@ def check_orphan(filename, dirpath):
         if not any(os.path.exists(fullbase + ext) for ext in (".c", ".cpp", ".cc", ".C")):
             return True
     elif ext == ".pyc":
-        if not os.path.exists(fullbase + ".py"):
+        if not os.path.exists(fullbase + ".py") and not os.path.exists(
+                os.path.join("..", fullbase + ".py")):
             return True
     return False
 
