@@ -35,6 +35,8 @@
 (require 'font-lock)
 ;; pretty printing
 (require 'printing)
+;; better subversion status line
+(require 'psvn)
 
 (require 'whitespace)
 (global-whitespace-mode t)
@@ -61,6 +63,8 @@
 
 (global-set-key [(control h) (control h)] 'hs-hide-block)
 (global-set-key [(control h) (control s)] 'hs-show-block)
+
+(add-to-list 'auto-mode-alist '("COMMIT_EDITMSG" . diff-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell
 
@@ -110,6 +114,10 @@
           (lambda () (interactive)
             (column-marker-1 (+ fill-column 1))
             (column-number-mode)))
+
+;; extended pylint output format with module name
+(pushnew '("^\\([[:alpha:]_][-[:alnum:]._/]+\\):[[:alpha:]_][-[:alnum:]._]+:\\([[:digit:]]+\\): " 1 2)
+         compilation-error-regexp-alist)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; C/C++
 (message "setup C++")
@@ -211,7 +219,7 @@
   (kill-buffer nil)
   )
 (global-set-key [f4] 'kill-current-buffer)
-(global-set-key [f6] 'new-frame)
+(global-set-key [f5] 'new-frame)
 
 (global-set-key [f7] 'next-error)
 (global-set-key [(shift f7)] 'previous-error)
