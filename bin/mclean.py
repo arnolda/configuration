@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Clean up most temporary files created by LaTeX, C and Python.
 #
@@ -85,7 +85,7 @@ def ask(prompt, force=False):
     "simple yes/y prompt"
     if not force:
         try:
-            answer = raw_input(prompt + "? ").lower()
+            answer = input(prompt + "? ").lower()
         except KeyboardInterrupt:
             sys.stdout.write(" aborted\n")
             sys.exit(1)
