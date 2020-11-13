@@ -53,6 +53,21 @@
       (message "Deleted file %s" filename)
       (kill-buffer))))
 
+(defun rename-file-and-buffer (new-name)
+  "Rename the current buffer and the file it is visiting."
+  (interactive "sNew name:")
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (if (not filename)
+        (message "Buffer '%s' is not visiting a file!" name)
+      (if (get-buffer new-name)
+          (message "A buffer named '%s' already exists!" new-name)
+        (progn
+          (rename-file filename new-name 1)
+          (rename-buffer new-name)
+          (set-visited-file-name new-name)
+          (set-buffer-modified-p nil))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; show/hide blocks
 
 (add-hook 'tcl-mode-hook 'hs-minor-mode)
@@ -60,6 +75,7 @@
 (add-hook 'c++-mode-hook 'hs-minor-mode)
 (add-hook 'python-mode-hook 'hs-minor-mode)
 (add-hook 'lua-mode-hook 'hs-minor-mode)
+(add-hook 'web-mode-hook 'hs-minor-mode)
 
 (global-set-key [(control h) (control h)] 'hs-hide-block)
 (global-set-key [(control h) (control s)] 'hs-show-block)
@@ -78,36 +94,39 @@
 (require 'tramp)
 (setq tramp-default-method "sshx")
 
-(defun new-compilation-buffer ()
-  "Copy current compilation buffer to something unique so that a new compilation job can be run."
-  (interactive)
-  (let ((cbuf (current-buffer))
-        (more-cbufs t)
-        (n 1)
-        (new-cbuf-name ""))
-    (when (equal major-mode "compilation-mode")
-      (while more-cbufs
-        (setq new-cbuf-name (format "*compilation%d*" n))
-        (setq n (1+ n))
-        (setq more-cbufs (get-buffer new-cbuf-name)))
-      (message "creating buffer %s" new-cbuf-name)
-      (with-current-buffer (get-buffer-create new-cbuf-name)
-        (insert-buffer-substring cbuf)
-        (compilation-mode)
-        ))
-    ))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Mixed HTML+CCS+...
 (message "setup web-mode")
 
 (require 'web-mode)
 
-(add-to-list 'magic-mode-alist '("\\(?:<\\?xml\\s +[^>]*>\\)?\\s *<\\(?:!--\\(?:[^-]\\|-[^-]\\)*-->\\s *<\\)*\\(?:!DOCTYPE\\s +[^>]*>\\s *<\\s *\\(?:!--\\(?:[^-]\\|-[^-]\\)*-->\\s *<\\)*\\)?[Hh][Tt][Mm][Ll]" . web-mode))
+(add-to-list 'magic-mode-alist
+             '("\\(?:<\\?xml\\s +[^>]*>\\)?\\s *<\\(?:!--\\(?:[^-]\\|-[^-]\\)*-->\\s *<\\)*\\(?:!DOCTYPE\\s +[^>]*>\\s *<\\s *\\(?:!--\\(?:[^-]\\|-[^-]\\)*-->\\s *<\\)*\\)?[Hh][Tt][Mm][Ll]" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.html\\(\\.j2\\)?" . web-mode))
+
+(defun jinja ()
+  "Enable django (jinja) web engine"
+  (interactive)
+  (web-mode-set-engine "django"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Python
 (message "setup Python")
 
 (elpy-enable)
+
+(pyvenv-workon "python3")
+
+(defcustom elpy-test-parallel-pytest-runner-command elpy-test-pytest-runner-command
+  "The command to use for `elpy-test-parallel pytest-runner'."
+  :type '(repeat string)
+  :group 'elpy)
+
+(defun elpy-test-parallel-pytest-runner (top _file module test)
+  "Test the project using the pytest test runner in parallel. Ignores module or test"
+  (interactive (elpy-test-at-point))
+  (apply #'elpy-test-run
+         top
+         elpy-test-parallel-pytest-runner-command))
+(put 'elpy-test-parallel-pytest-runner 'elpy-test-runner-p t)
 
 (require 'column-marker)
 (add-hook 'python-mode-hook
@@ -116,8 +135,14 @@
             (column-number-mode)))
 
 ;; extended pylint output format with module name
-(pushnew '("^\\([[:alpha:]_][-[:alnum:]._/]+\\):[[:alpha:]_][-[:alnum:]._]+:\\([[:digit:]]+\\): " 1 2)
+(pushnew '("^\\([[:alpha:]_/][-[:alnum:]._/]+\\):[[:alpha:]_][-[:alnum:]._]+:\\([[:digit:]]+\\): " 1 2)
          compilation-error-regexp-alist)
+
+;; sphinx doc string warning
+(pushnew '("^\\([[:alpha:]_/][-[:alnum:]._/]+\\):[-[:alnum:]._ ]+:: " 1)
+         compilation-error-regexp-alist)
+
+(global-set-key [(ctrl shift f9)] 'elpy-test-parallel-pytest-runner)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; C/C++
 (message "setup C++")
@@ -181,7 +206,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; LaTeX / text
 (message "setup LaTeX")
 
-(set-default 'ispell-local-dictionary "de")
 (setq-default ispell-program-name "aspell")
 
 (require 'lorem-ipsum)
@@ -223,7 +247,7 @@
 
 (global-set-key [f7] 'next-error)
 (global-set-key [(shift f7)] 'previous-error)
-(global-set-key [f8] 'new-compilation-buffer)
+(global-set-key [f8] 'rename-uniquely)
 (global-set-key [f9] 'recompile)
 (global-set-key [(shift f9)] 'compile)
 
