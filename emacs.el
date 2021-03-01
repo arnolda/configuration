@@ -38,6 +38,10 @@
 ;; better subversion status line
 (require 'psvn)
 
+;; directory tree view
+(require 'neotree)
+
+;; whitespace cleanup
 (require 'whitespace)
 (global-whitespace-mode t)
 
@@ -108,6 +112,11 @@
   (interactive)
   (web-mode-set-engine "django"))
 
+(require 'flycheck)
+
+(add-hook 'json-mode-hook 'flycheck-mode)
+(add-hook 'js-mode-hook 'flycheck-mode)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Python
 (message "setup Python")
 
@@ -134,8 +143,12 @@
             (column-marker-1 (+ fill-column 1))
             (column-number-mode)))
 
+;; ansiblelint output format with module name
+(pushnew '("^\\([[:alpha:]_/][-[:alnum:]._/]+\\)::\\([[:digit:]]+\\): " 1 2)
+         compilation-error-regexp-alist)
+
 ;; extended pylint output format with module name
-(pushnew '("^\\([[:alpha:]_/][-[:alnum:]._/]+\\):[[:alpha:]_][-[:alnum:]._]+:\\([[:digit:]]+\\): " 1 2)
+(pushnew '("^\\([[:alpha:]_/][-[:alnum:]._/]+\\):[[:alpha:]_][-[:alnum:]._ ]+:\\([[:digit:]]+\\): " 1 2)
          compilation-error-regexp-alist)
 
 ;; sphinx doc string warning
@@ -232,7 +245,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; short cuts
 
-(global-set-key [f2] 'isearch-forward)
+(global-set-key [f2] 'neotree-toggle)
 
 (global-set-key [f3] 'delete-window)
 (global-set-key [(shift f3)] 'delete-frame)
